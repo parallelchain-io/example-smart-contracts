@@ -11,4 +11,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 borsh = "0.9"
-parallelchain_sdk = { git = "https://github.com/parallelchain-io/parallelchain-sdk.git" }
+smart_contract = { git = "https://github.com/parallelchain-io/parallelchain-sdk.git" }
