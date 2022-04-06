@@ -23,7 +23,7 @@ do
 done
 
 if test ! -f "$filename"; then
-    echo "The file $filename doen't exist."
+    echo "The file $filename doesn't exist."
     exit 1
 fi
 
