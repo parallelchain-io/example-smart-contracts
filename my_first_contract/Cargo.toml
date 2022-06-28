@@ -11,4 +11,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 anyhow = "1.0"
-smart_contract = { git = "https://github.com/parallelchain-io/parallelchain-sdk.git" }
+smart_contract = { package = "pchain-sdk" , version = "0.1.0"}

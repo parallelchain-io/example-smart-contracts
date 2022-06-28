@@ -14,4 +14,4 @@ anyhow = "1.0"
 base64 = "0.13"
 borsh = "0.9"
 sha2 = "0.10"
-smart_contract = { git = "https://github.com/parallelchain-io/parallelchain-sdk" }
+smart_contract = { package = "pchain-sdk", version = "0.1.0" }
