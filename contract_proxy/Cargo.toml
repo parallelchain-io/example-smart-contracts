@@ -1,5 +1,5 @@
 [package]
-name = "my_little_pony"
+name = "contract_proxy"
 version = "0.2.0"
 edition = "2021"
 
@@ -9,6 +9,4 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-anyhow = "1.0"
-borsh = "0.9"
 smart_contract = { package = "pchain-sdk", version = "0.2" }

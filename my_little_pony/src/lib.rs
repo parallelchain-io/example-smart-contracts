@@ -16,76 +16,99 @@
  */
 
 use smart_contract::{
-    contract_init,
-    sdk_method_bindgen,
-    Transaction
+    contract, init, action, view,
+    ContractField,
 };
 
-use anyhow::Result;
-use borsh::{BorshDeserialize, BorshSerialize};
+// MyLittlePoiny is a contract to demonstrate how contract can:
+// - define init, action and view entrypoint methods
+// - define fields as data in contract storage
+// - create contract metadata
 
-// REPLACE ARGUMENT STRUCT WITH YOUR OWN IF ANY
-#[sdk_method_bindgen]
-#[derive(BorshSerialize, BorshDeserialize)]
+/// ### Lesson 1:
+/// The macro `contract` on struct allow loading/storing fields from/into world state.
+/// The key to be store is u8 integer ordered by the order of the fields. E.g. `name` has key [0] while `age` has key [1]
+#[contract]
 pub struct MyLittlePony {
-    pub name: String,
-    pub age: u32,
-    pub gender: Gender,
+    name: String,
+    age: u32,
+    gender: Gender,
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Clone)]
-pub enum Gender {
-    Female,
-    Male,
+/// ### Lesson 2:
+/// The contract field can be used in contract struct so that the key-value pair can be accessed in canonical format.
+/// For example, `name` in Gender has a key [2][0] for contract `MyLittlePony`.
+#[derive(ContractField)]
+struct Gender {
+    name: String,
+    description: String
 }
 
+/// ### Lesson 3:
+/// When attribute `meta` is included in the macro contract, contract metadata is created to allow proving information for cross contract call.
+/// The metadata is a str slice that is also rust source code representing a trait. Developer can directly include this trait in cross contract call. 
+/// Please note the trait is only applicable to action entrypoint methods
+#[contract(meta)]
 impl MyLittlePony {
     
-    fn new(tx: &Transaction<MyLittlePony>, name: &String, age: u32, gender: &Gender) -> Self {
-        let little_pony = MyLittlePony {
-            name: name.to_owned(),
+    /// ### Lesson 4:
+    /// This method is `init` method that will be execution during contract deployment process
+    #[init]
+    fn new(name: String, age: u32 ) {
+        Transaction::emit_event(
+            "Init Contract".to_string().as_bytes(),
+            format!("{} at age{} was born.", name, age).as_bytes()
+        );
+        MyLittlePony {
+            name,
             age,
-            gender: gender.to_owned(),
-        };
-
-        tx.set_my_little_pony(little_pony.name.as_bytes(), &little_pony);
-
-        little_pony
-
+            gender: Gender { 
+                name: String::default(), 
+                description: String::default()
+            }
+        }.set(); // this setter applies to all fields in whole struct
     }
 
-    fn neigh(&self, tx: &Transaction<MyLittlePony>) {
-
-        match tx.get_my_little_pony(self.name.as_bytes()) {
-            Some(pony) => {
-                let topic: String = "Neigh Message".to_string();
-                let value: String = format!("Pony with name {} neighs at age: {}", self.name, pony.age);
-                tx.emit_event(topic.as_bytes(), value.as_bytes());
-            },
-            None => {
-                let topic: String = "No Pony".to_string();
-                let value: String = format!("Pony not found");
-                tx.emit_event(topic.as_bytes(), value.as_bytes());
-            }       
-        };
-
+    /// ### Lesson 5: 
+    /// Use receiver `&self` to load all data before executing this method. 
+    /// All data will be loaded to receiver self from world state.
+    #[action] 
+    fn self_introduction(&self) -> String {
+        format!("Hi, I am {}. Age of {}. I am {} that means {}.",
+            self.name, self.age, self.gender.name, self.gender.description
+        ).to_string()
     }
-}
 
+    /// ### Lesson 6:
+    /// This method use contract getter and setter to store the updated data to field `data` to world state. 
+    /// Write cost is small because there is only one key-value pair in world state to be mutated.
+    #[action]
+    fn grow_up() {
+        let age = Self::get_age();
+        Self::set_age(age+1)
+    }
 
-// The `contract_init` macro is required to convert the smart contract code
-// from idiomatic rust to a contract that is readable and executable in
-// ParallelChain Mainnet Fullnode.
-#[contract_init]
-pub fn contract(tx: Transaction<MyLittlePony>) -> Result<String> {
-    let pony_specification = &tx.arguments;
-    let new_pony = MyLittlePony::new(
-        &tx, 
-        &pony_specification.name, 
-        pony_specification.age, 
-        &pony_specification.gender
-    );
+    /// ### Lesson 7:
+    /// Use mutable receiver `&mut self` to load data before executing this method, and then store all data after execution.
+    /// Be cautious to use mutable receiver as it is expansive to load and storte all key-value pairs in world state
+    #[action]
+    fn change_person(&mut self, name: String, age: u32, gender_name: String, description: String) {
+        Transaction::emit_event(
+            "update_gender".to_string().as_bytes(), 
+            format!("update name:{} description: {}", name, description).as_bytes());
+        self.name = name;
+        self.age = age;
+        self.gender.name = gender_name;
+        self.gender.description = description;
+    }
 
-    Ok(format!("Welcome pony, {}", &new_pony.name))
-
+    /// ### Lesson 8:
+    /// View entrypoint method provides cost-free execution of a contract.
+    /// View methods are limited by allowing only execution of getting world-state data.
+    #[view]
+    fn age() -> u32 {
+        Self::get_age()
+        // This will cause panic:
+        // Self::set_name("my name".to_string())
+    }
 }
