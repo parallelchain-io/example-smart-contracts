@@ -1,4 +1,4 @@
-# Building your smart contract with ParallelChain F pchain_compile
+# Building smart contracts with ParallelChain F pchain_compile
 
 For deploying your smart contract on ParallelChain F, we recommend using **pchain_compile**, which is a CLI build tool for smart contract developers to build their source code to optimized WASM binaries in an environment that is consistent with that of ParallelChain F. For more information on **pchain_compile**, users are recommended to visit the official documentation page [here](https://docs.parallelchain.io/smart_contract_sdk/build_contract/).
 
