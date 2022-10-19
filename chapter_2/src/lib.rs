@@ -1,42 +1,42 @@
 /*
- Copyright (c) 2022 ParallelChain Lab
+ Copyright 2022 ParallelChain Lab
 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+     http://www.apache.org/licenses/LICENSE-2.0
 
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
  */
 
 /// The bank smart contract simulates
 /// banking operations with data stored
 /// in ParallelChain Mainnet.
 
-use smart_contract::{
-    contract, action, precompile
+use pchain_sdk::{
+    contract, contract_methods, action, precompiles
 };
 
 mod bank_account;
 
-use bank_account::{BankAccount, sdk_typed_BankAccount};
+use bank_account::BankAccount;
 /// ### Lesson 1:
 /// The macro `contract` on struct allow loading/storing fields from/into world state.
 /// The key to be store is u8 integer ordered by the order of the fields. E.g. `num_of_account` has key [0]
 #[contract]
 struct MyBank {
+    
     num_of_account: u64
 }
 
 /// ### Lesson 2:
 /// The macro `contract` generates entrypoint methods that can be called in transaction
-#[contract]
+#[contract_methods]
 impl MyBank {
 
     /// entrypoint method "open_account"
@@ -54,7 +54,7 @@ impl MyBank {
             // generate a new account id using the base64 encoded sha256 hash
             // of the first and last name concatenated together
             let input = format!("{}{}", &first_name, &last_name).to_string().as_bytes().to_vec();
-            precompile::sha256(input)
+            precompiles::sha256(input)
         };
 
         let opened_bank_account = BankAccount {
@@ -64,8 +64,7 @@ impl MyBank {
             amount: initial_deposit,
         };
 
-        let tx = Transaction::new();
-        tx.set_bank_account(
+        bank_account::set_bank_account(
             &opened_bank_account.account_id.as_bytes(),
             &opened_bank_account
         );
@@ -73,7 +72,7 @@ impl MyBank {
         let initial_num_of_account = MyBank::get_num_of_account();
         MyBank::set_num_of_account(initial_num_of_account + 1);
 
-        Transaction::emit_event(
+        pchain_sdk::emit_event(
             "bank_account: Open".as_bytes(),
             format!("Successfully opened 
             account for {}, {} 
@@ -87,10 +86,9 @@ impl MyBank {
     /// entrypoint method "query_account_balance"
     #[action]
     fn query_account_balance(account_id: String) {
-        let tx = Transaction::new();
-        match tx.get_bank_account(account_id.as_bytes()) {
+        match bank_account::get_bank_account(account_id.as_bytes()) {
             Some(balance) => {
-                Transaction::emit_event(
+                pchain_sdk::emit_event(
                     format!("bank: query_account_balance").as_bytes(),
                     format!("The current balance is : \nName: {} {}\nAccount Number: {}\nBalance: {}", 
                     &balance.first_name,
@@ -103,7 +101,7 @@ impl MyBank {
                 );
             },
             None => {
-                Transaction::emit_event(
+                pchain_sdk::emit_event(
                     format!("bank: query_account_balance").as_bytes(),
                     format!("No such account found").as_bytes()
                 );
@@ -114,16 +112,15 @@ impl MyBank {
     /// entrypoint method "withdraw_money"
     #[action]
     fn withdraw_money(account_id: String, amount_to_withdraw: u64) {
-        let tx = Transaction::new();
-        match tx.get_bank_account(account_id.as_bytes()) {
+        match bank_account::get_bank_account(account_id.as_bytes()) {
             Some(mut query_result) => {
                 match query_result.withdraw_from_balance(amount_to_withdraw) {
                     Some(balance) => {
     
                         // update the world state
-                        tx.set_bank_account(account_id.as_bytes(), &query_result);
+                        bank_account::set_bank_account(account_id.as_bytes(), &query_result);
     
-                        Transaction::emit_event(
+                        pchain_sdk::emit_event(
                             format!("bank: withdraw_money").as_bytes(),
                             format!("The updated balance is: \n
                             Name: {} {}\n
@@ -135,13 +132,13 @@ impl MyBank {
                             &balance).as_bytes()
                         );
                     }
-                    None => Transaction::emit_event(
+                    None => pchain_sdk::emit_event(
                         format!("bank: withdraw_money").as_bytes(),
                         format!("You do not have enough funds to withdraw from this account.").as_bytes()
                     ),
                 }
             },
-            None => Transaction::emit_event(
+            None => pchain_sdk::emit_event(
                 format!("bank: withdraw_money").as_bytes(),
                 format!("No such account found").as_bytes()
             ),
@@ -151,15 +148,14 @@ impl MyBank {
     /// entrypoint method "deposit_money"
     #[action]
     fn deposit_money(account_id: String, amount_to_deposit: u64) {
-        let tx = Transaction::new();
-        match tx.get_bank_account(account_id.as_bytes()) {
+        match bank_account::get_bank_account(account_id.as_bytes()) {
             Some(mut query_result) => {
                 query_result.deposit_to_balance(amount_to_deposit);
     
                 // update the world state
-                tx.set_bank_account(account_id.as_bytes(), &query_result);
+                bank_account::set_bank_account(account_id.as_bytes(), &query_result);
     
-                Transaction::emit_event(
+                pchain_sdk::emit_event(
                     format!("bank: deposit_money").as_bytes(),
                     format!("The updated balance is: \nName: {} {}\nAccount Number: {}\nBalance: {}", 
                     &query_result.first_name,
@@ -168,7 +164,7 @@ impl MyBank {
                     &query_result.amount).as_bytes()
                 );
             },
-            None => Transaction::emit_event(
+            None => pchain_sdk::emit_event(
                 format!("bank: query_account_balance").as_bytes(),
                 format!("No such account found").as_bytes()
             ),

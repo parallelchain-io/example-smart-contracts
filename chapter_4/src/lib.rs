@@ -1,23 +1,21 @@
 /*
- Copyright (c) 2022 ParallelChain Lab
+ Copyright 2022 ParallelChain Lab
 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- GNU General Public License for more details.
+     http://www.apache.org/licenses/LICENSE-2.0
 
- You should have received a copy of the GNU General Public License
- along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
  */
 
-use smart_contract::{
-    contract, init, action, view,
-    ContractField,
+use pchain_sdk::{
+    contract, contract_methods, init, action, view, contract_field
 };
 
 // MyLittlePoiny is a contract to demonstrate how contract can:
@@ -38,7 +36,7 @@ pub struct MyLittlePony {
 /// ### Lesson 2:
 /// The contract field can be used in contract struct so that the key-value pair can be accessed in canonical format.
 /// For example, `name` in Gender has a key [2][0] for contract `MyLittlePony`.
-#[derive(ContractField)]
+#[contract_field]
 struct Gender {
     name: String,
     description: String
@@ -48,14 +46,14 @@ struct Gender {
 /// When attribute `meta` is included in the macro contract, contract metadata is created to allow proving information for cross contract call.
 /// The metadata is a str slice that is also rust source code representing a trait. Developer can directly include this trait in cross contract call. 
 /// Please note the trait is only applicable to action entrypoint methods
-#[contract(meta)]
+#[contract_methods(meta)]
 impl MyLittlePony {
     
     /// ### Lesson 4:
     /// This method is `init` method that will be execution during contract deployment process
     #[init]
     fn new(name: String, age: u32 ) {
-        Transaction::emit_event(
+        pchain_sdk::emit_event(
             "Init Contract".to_string().as_bytes(),
             format!("{} at age{} was born.", name, age).as_bytes()
         );
@@ -93,7 +91,7 @@ impl MyLittlePony {
     /// Be cautious to use mutable receiver as it is expansive to load and storte all key-value pairs in world state
     #[action]
     fn change_person(&mut self, name: String, age: u32, gender_name: String, description: String) {
-        Transaction::emit_event(
+        pchain_sdk::emit_event(
             "update_gender".to_string().as_bytes(), 
             format!("update name:{} description: {}", name, description).as_bytes());
         self.name = name;
