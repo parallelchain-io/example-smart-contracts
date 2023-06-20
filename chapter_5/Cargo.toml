@@ -1,5 +1,5 @@
 [package]
-name = "contract_proxy"
+name = "my_collections"
 version = "0.1.0"
 edition = "2021"
 
@@ -9,7 +9,5 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-pchain-sdk = { path = "../../sdk" }
-pchain-types = "=0.4.3"
 borsh = "=0.10.2"
-base64url = "0.1.0"
+pchain-sdk = { path = "../../sdk" }

@@ -1,26 +1,10 @@
-/*
- Copyright 2022 ParallelChain Lab
-
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- */
-
 use borsh::{BorshDeserialize, BorshSerialize};
 
 use pchain_sdk::{
     storage,
 };
 // An example of a data struct using the `sdk_method_bindgen` macro provided 
-// by ParallelChain Mainnet Smart contract SDK.
+// by ParallelChain Mainnet Smart Contract SDK.
 //
 // Note that both the serializer and deserializer macros such as Borsh need to 
 // be applied to this struct for it to work. See the ParallelChain Mainnet 

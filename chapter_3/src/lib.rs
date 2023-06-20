@@ -1,90 +1,156 @@
-/*
- Copyright 2022 ParallelChain Lab
-
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
-
-     http://www.apache.org/licenses/LICENSE-2.0
-
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- */
+/// The bank smart contract simulates
+/// banking operations with data stored
+/// in ParallelChain Mainnet.
 
 use pchain_sdk::{
-    use_contract, contract, contract_methods, action
+    contract, contract_methods, call, crypto
 };
 
-// Contract Proxy serves as middle-man to another contract `MyLittlePony`.
-// This example shows how contract can interact with other contract by:
-// - call action and view entrypoint method
-// - send tokens from balance of this contract to other contract
+mod bank_account;
 
-
-/// ### Lesson 1:
-/// use macro `use_contract` to specify the contract action entrypoint methods in a trait.
-/// The address is hard-coded when using macro `use_contract`.
-/// It is recommended to remove/comment out the methods that are not intended to be used.
-#[use_contract("-jUt6jrEfMRD1JM9n6_yAASl2cwsc4tg1Bqp07gvQpU")]
-pub trait MyLittlePony {
-    //fn self_introduction() -> String;
-    fn grow_up();
-    //fn change_person(name :String, age :u32, gender_name :String, description :String);
+use bank_account::BankAccount;
+/// ### Section 1:
+/// The macro `contract` on struct allows loading/storing fields from/into world state.
+/// The key to be stored is u8 integer ordered by the index of the fields. E.g. `num_of_account` has key [0]
+#[contract]
+struct MyBank {
+    num_of_account: u64
 }
 
-#[contract]
-pub struct ContractProxy {}
-
+/// ### Section 2:
+/// The macro `contract` generates entrypoint methods that can be called in transaction
 #[contract_methods]
-impl ContractProxy {
+impl MyBank {
 
-    /// ### Lesson 2:
-    /// The trait will be transformed to mod by using macro `use_contract`. 
-    /// Calling the contract `MyLittlePony` can be simply calling associate methods according to defined method in the trait.
-    /// Value and Gas will be needed in cross contract call
-    #[action]
-    fn grow_up() {
-        my_little_pony::grow_up(0);
-    }
+    /// entrypoint method "open_account"
+    #[call]
+    fn open_account(
+        first_name: String,
+        last_name: String,
+        account_id: String,
+        initial_deposit: u64,
+    ) {
+        let parsed_account_id= 
+        if account_id != "" {
+            account_id.to_owned().as_bytes().to_vec()
+        } else {
+            // generate a new account id using the base64 encoded sha256 hash
+            // of the first and last name concatenated together
+            let input = format!("{}{}", &first_name, &last_name).to_string().as_bytes().to_vec();
+            crypto::sha256(input)
+        };
 
-    /// ### Lesson 3:
-    /// It is also possible to use call_action_untyped() instead of macro `use_contract` to make a cross contract call.
-    /// Address can also be passed as argument so that contract address is not necessary hard-coded.
-    #[action]
-    fn grow_up_2() {
-        let contract_address = pchain_types::Base64URL::decode("-jUt6jrEfMRD1JM9n6_yAASl2cwsc4tg1Bqp07gvQpU").unwrap().try_into().unwrap();
-        pchain_sdk::call_action_untyped(
-            contract_address,
-            "grow_up", 
-            Vec::new(),
-            0);
-    }
+        let opened_bank_account = BankAccount {
+            first_name: first_name.to_owned(),
+            last_name: last_name.to_owned(),
+            account_id:  base64::encode(parsed_account_id),
+            amount: initial_deposit,
+        };
 
-    /// ### Lesson 4:
-    /// use method pay() to send tokens from this contract balance to specific address.
-    #[action]
-    fn send_tokens(value :u64){
-        let contract_address = pchain_types::Base64URL::decode("-jUt6jrEfMRD1JM9n6_yAASl2cwsc4tg1Bqp07gvQpU").unwrap().try_into().unwrap();
-        pchain_sdk::pay(
-            contract_address,
-            value
+        bank_account::set_bank_account(
+            &opened_bank_account.account_id.as_bytes(),
+            &opened_bank_account
+        );
+
+        let initial_num_of_account = MyBank::get_num_of_account();
+        MyBank::set_num_of_account(initial_num_of_account + 1);
+
+        pchain_sdk::log(
+            "bank_account: Open".as_bytes(),
+            format!("Successfully opened 
+            account for {}, {} 
+            with account_id: {}",
+            &opened_bank_account.first_name,
+            &opened_bank_account.last_name,
+            &opened_bank_account.account_id).as_bytes()
         );
     }
 
-    /// ### Lesson 5:
-    /// use method view_contract() to access view entrypoint methods from specific contract address
-    #[action]
-    fn is_adult() -> bool {
-        let contract_address = pchain_types::Base64URL::decode("-jUt6jrEfMRD1JM9n6_yAASl2cwsc4tg1Bqp07gvQpU").unwrap().try_into().unwrap();
-        if let Some(age) = pchain_sdk::call_view::<u32>(
-            contract_address,
-            "age",
-            Vec::new()) {
-            return age > 18;
+    /// entrypoint method "query_account_balance"
+    #[call]
+    fn query_account_balance(account_id: String) {
+        match bank_account::get_bank_account(account_id.as_bytes()) {
+            Some(balance) => {
+                pchain_sdk::log(
+                    format!("bank: query_account_balance").as_bytes(),
+                    format!("The current balance is : \nName: {} {}\nAccount Number: {}\nBalance: {}", 
+                    &balance.first_name,
+                    &balance.last_name,
+                    &balance.account_id,
+                    // `balance` is an abstract field stored in the world state with the field BankAccount.amount.
+                    // Any interaction using the `amount` field to the world state will affect the balance of 
+                    // the bank account. 
+                    &balance.amount).as_bytes()
+                );
+            },
+            None => {
+                pchain_sdk::log(
+                    format!("bank: query_account_balance").as_bytes(),
+                    format!("No such account found").as_bytes()
+                );
+            }
         }
-        return false;
+    }
+
+    /// entrypoint method "withdraw_money"
+    #[call]
+    fn withdraw_money(account_id: String, amount_to_withdraw: u64) {
+        match bank_account::get_bank_account(account_id.as_bytes()) {
+            Some(mut query_result) => {
+                match query_result.withdraw_from_balance(amount_to_withdraw) {
+                    Some(balance) => {
+    
+                        // update the world state
+                        bank_account::set_bank_account(account_id.as_bytes(), &query_result);
+    
+                        pchain_sdk::log(
+                            format!("bank: withdraw_money").as_bytes(),
+                            format!("The updated balance is: \n
+                            Name: {} {}\n
+                            Account Number: {}\n
+                            Balance: {}", 
+                            &query_result.first_name,
+                            &query_result.last_name,
+                            &query_result.account_id,
+                            &balance).as_bytes()
+                        );
+                    }
+                    None => pchain_sdk::log(
+                        format!("bank: withdraw_money").as_bytes(),
+                        format!("You do not have enough funds to withdraw from this account.").as_bytes()
+                    ),
+                }
+            },
+            None => pchain_sdk::log(
+                format!("bank: withdraw_money").as_bytes(),
+                format!("No such account found").as_bytes()
+            ),
+        };
+    }
+
+    /// entrypoint method "deposit_money"
+    #[call]
+    fn deposit_money(account_id: String, amount_to_deposit: u64) {
+        match bank_account::get_bank_account(account_id.as_bytes()) {
+            Some(mut query_result) => {
+                query_result.deposit_to_balance(amount_to_deposit);
+    
+                // update the world state
+                bank_account::set_bank_account(account_id.as_bytes(), &query_result);
+    
+                pchain_sdk::log(
+                    format!("bank: deposit_money").as_bytes(),
+                    format!("The updated balance is: \nName: {} {}\nAccount Number: {}\nBalance: {}", 
+                    &query_result.first_name,
+                    &query_result.last_name,
+                    &query_result.account_id,
+                    &query_result.amount).as_bytes()
+                );
+            },
+            None => pchain_sdk::log(
+                format!("bank: query_account_balance").as_bytes(),
+                format!("No such account found").as_bytes()
+            ),
+        };
     }
 }

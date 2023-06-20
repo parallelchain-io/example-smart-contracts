@@ -1,80 +1,26 @@
-# Building smart contracts with ParallelChain F pchain_compile
+# Example ParallelChain F Smart Contracts
 
-For deploying your smart contract on ParallelChain F, we recommend using **pchain_compile**, which is a CLI build tool for smart contract developers to build their source code to optimized WASM binaries in an environment that is consistent with that of ParallelChain F. For more information on **pchain_compile**, users are recommended to visit the official documentation page [here](https://docs.parallelchain.io/smart_contract_sdk/build_contract/).
+## Chapter 1: HelloContract
 
-
-## Requirements to use pchain_compile
-* `pchain_compile` only needs Docker to be installed on the system for operation. To know more 
-  about Docker and to install it you may refer to the instructions provided [here](https://docs.docker.com/get-docker/).
+HelloContract goes through the steps of creating a simple smart contract with the use of `pchain_sdk` macros, including `contract`, `contract_methods`, and `call`.
 
 
-## Steps to build your smart contracts using pchain_compile
+## Chapter 2: MyLittlePony
 
-* To run `pchain_compile` after installing prerequisites, give relevant permissions to the executable.
+MyLittlePony demonstrates how we define entrypoint methods and fields as data in contract storage. It goes through how a contract struct can be defined, as well as the use of `contract_field` macros. It also introduces different ways of getting and setting data in contract storage.
 
-   - In Ubuntu, give permission to run the executable. 
-      ```
-      chmod +x pchain_compile
-      ```
-   - For Windows there is no need for this step.
+## Chapter 3: MyBank
 
-* Run the following command.
-  `./pchain_compile build --source <SOURCE_CODE_PATH> --destination  <DESTINATION_PATH>`
-  More illustrative examples on how to execute the binary in different OS platforms are shown below.
+MyBank simulates banking operations with data stored in ParallelChain Mainnet. We combine the knowledge from the previous chapters and provide the basic functionalities of a bank.
 
+## Chapter 4: ContractProxy
 
-## Examples
-The following is a real life example of how `pchain_compile` can be used where some source code is kept with a manifest file with package name `source_code` within a directory on two different OS platforms.
+ContractProxy introduces the use of the `use_contract` macro to interact with other contracts. We make use of the MyLittlePony smart contract from Chapter 2 to demonstrate the interaction between two contracts.
 
-- on Linux 
-      
-```
-./pchain_compile  build \
---source $HOME/test/source_code \
---destination $HOME/results/
+## Chapter 5: MyCollections
 
-Output: Finished compiling. ParallelChain F smart contract (source_code.wasm) is saved at (home/user/results/).
-```
+MyCollections illustrates the functionalities of collections provided by `pchain_sdk`. The collection structures are designed for gas efficiency, they include `Cacher`, `Vector`, `FastMap`, and `IterableMap`.
 
-- on Linux 
-      
-```
-./pchain_compile  build \
---source $HOME/test/source_code
+## Chapter 6: MyPool
 
-Output: Finished compiling. ParallelChain F smart contract (source_code.wasm) is saved at (home/user/test/source_code).
-```
-
-- on Windows
-
-```
-pchain_compile.exe  build \
---source D:\test\source_code \
---destination D:\results 
-
-Output: Finished compiling. ParallelChain F smart contract (source_code.wasm) is saved at (D:\results).
-```
-
-- on Windows
-
-```
-pchain_compile.exe  build \
---source D:\test\source_code
-
-Output: Finished compiling. ParallelChain F smart contract (source_code.wasm) is saved at (D:\test\source_code).
-```
-
-## Download **pchain_compile**
-
-'pchain_compile' supports Linux, macOS and Windows. Depending on the operating system, they can be downloaded from the 
-following links below.
-
-=== "Linux / macOS"
-
-For Linux / macOS, users can download `pchain_compile` from [here](https://cms.parallelchain.io/pchain_compile_linux_v1.1.tar.xz)
-
-=== "Windows"
-
-For Windows, users can download `pchain_compile` from [here](https://cms.parallelchain.io/pchain_compile_win_v1.1.zip)
-
-
+MyPool shows how network commands are used in smart contracts. It demonstrates how they can be created in smart contracts and explains their characteristics.
