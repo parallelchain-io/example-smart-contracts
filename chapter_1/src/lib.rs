@@ -31,7 +31,7 @@ impl HelloContract {
 
     #[call]
     fn hello_set_many() {
-        for i in 1..10{
+        for i in 1..10 {
             let key = format!("hello-key-{}", i);
             let value = vec![0_u8; 1024*10]; //10KB
             storage::set(key.as_bytes(), &value);
@@ -40,13 +40,12 @@ impl HelloContract {
 
     #[call]
     fn hello_read_many() {
-        for i in 1..10{
+        for i in 1..10 {
             let key = format!("hello-key-{}", i);
-            let value = storage::get(key.as_bytes());
-            if value.is_some(){
+            if let Some(value) = storage::get(key.as_bytes()) {
                 log(
                     "topic: Hello read".as_bytes(), 
-                    format!("key: {}, len: {}", key, value.unwrap().len()).as_bytes()
+                    format!("key: {}, len: {}", key, value.len()).as_bytes()
                 );
             }
         }

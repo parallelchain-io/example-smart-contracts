@@ -31,18 +31,17 @@ impl MyBank {
         initial_deposit: u64,
     ) {
         let parsed_account_id= 
-        if account_id != "" {
-            account_id.to_owned().as_bytes().to_vec()
+        if !account_id.is_empty() {
+            account_id.as_bytes().to_vec()
         } else {
             // generate a new account id using the base64 encoded sha256 hash
             // of the first and last name concatenated together
-            let input = format!("{}{}", &first_name, &last_name).to_string().as_bytes().to_vec();
-            crypto::sha256(input)
+            crypto::sha256(format!("{}{}", &first_name, &last_name).as_bytes().to_vec())
         };
 
         let opened_bank_account = BankAccount {
-            first_name: first_name.to_owned(),
-            last_name: last_name.to_owned(),
+            first_name,
+            last_name,
             account_id:  base64::encode(parsed_account_id),
             amount: initial_deposit,
         };
@@ -52,8 +51,7 @@ impl MyBank {
             &opened_bank_account
         );
 
-        let initial_num_of_account = MyBank::get_num_of_account();
-        MyBank::set_num_of_account(initial_num_of_account + 1);
+        MyBank::set_num_of_account(MyBank::get_num_of_account() + 1);
 
         pchain_sdk::log(
             "bank_account: Open".as_bytes(),
@@ -99,7 +97,6 @@ impl MyBank {
             Some(mut query_result) => {
                 match query_result.withdraw_from_balance(amount_to_withdraw) {
                     Some(balance) => {
-    
                         // update the world state
                         bank_account::set_bank_account(account_id.as_bytes(), &query_result);
     
