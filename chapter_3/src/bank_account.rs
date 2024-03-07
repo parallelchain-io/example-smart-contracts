@@ -16,19 +16,12 @@ pub struct BankAccount {
     pub account_id: String,
     pub amount: u64,
 }
+
 pub fn get_bank_account(key: &[u8]) -> Option<BankAccount> {
-    match storage::get(key) {
-        Some(raw_result) => {
-            let p: Option<BankAccount> =
-                match BorshDeserialize::deserialize(&mut raw_result.as_ref()) {
-                    Ok(d) => Some(d),
-                    Err(_) => None,
-                };
-            p
-        }
-        None => None,
-    }
+    storage::get(key)
+        .and_then(|raw_result| BorshDeserialize::deserialize(&mut raw_result.as_ref()).ok())
 }
+
 pub fn set_bank_account(key: &[u8], value: &BankAccount) {
     let mut buffer: Vec<u8> = Vec::new();
     value.serialize(&mut buffer).unwrap();
